@@ -27,7 +27,9 @@ const main = async () => {
 			path: path + coordinate.lat + "," + coordinate.long,
 			method: 'GET'
 		}
-		const response = await fetch("https://api.darksky.net/forecast/d3cdf47118616664be90631b60bbc0a2/42.3601,-71.0589")
+		const url = `https://${options.hostname}${options.path}`
+		console.log(url);
+		const response = await fetch(url);
 		const json = await response.json();
 		returnedData.push(json);
 	});
