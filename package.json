@@ -1,0 +1,14 @@
+{
+  "name": "darkget",
+  "version": "1.0.0",
+  "description": "Script to get data from Dark Sky",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "node-fetch": "^2.5.0"
+  }
+}
