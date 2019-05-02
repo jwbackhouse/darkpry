@@ -9,6 +9,24 @@ const DARK_SKY_HOSTNAME = 'api.darksky.net'
 const DARK_SKY_PATH = 'forecast'
 const DARK_SKY_PROTOCOL = 'https'
 
+const getDarkSkyDataForCoordinates = async (coordinatesList) => {
+  const listOfRequestFunctionsNotYetExecuted = coordinatesList.map((coordinate) => {
+    return async () => {
+      console.log(`Getting data for lat: ${coordinate.lat} long: ${coordinate.long} from ${DARK_SKY_HOSTNAME} at ${coordinate.date}`)
+      const coordinateDate = new Date(coordinate.date)
+      const unixTimestamp = parseInt((coordinateDate.getTime() / 1000).toFixed(0))
+
+      const formattedRequestURLForCoordinateAsString = `${DARK_SKY_PROTOCOL}://${DARK_SKY_HOSTNAME}/${DARK_SKY_PATH}/${DARK_SKY_TOKEN}/${coordinate.lat},${coordinate.long}, ${unixTimestamp})}`
+      console.log(formattedRequestURLForCoordinateAsString)
+      const darkSkyCoordinateResponse = await fetch(formattedRequestURLForCoordinateAsString)
+      const darkSkyCoordinateJsonAsObject = await darkSkyCoordinateResponse.json()
+      return darkSkyCoordinateJsonAsObject
+    }
+  })
+  const listOfAllTheRequestsAsTheyAreExecuting = await parallel(listOfRequestFunctionsNotYetExecuted, NUMBER_OF_CONCURRENT_REQUESTS)
+  return Promise.all(listOfAllTheRequestsAsTheyAreExecuting)
+}
+
 const main = async () => {
   if (!DARK_SKY_TOKEN) { throw new Error('The environment variable DARK_SKY_TOKEN must be set') };
   let inputListOfCoordinatesAsAString = ''
@@ -19,21 +37,7 @@ const main = async () => {
     inputListOfCoordinatesAsAString = fs.readFileSync('sampleInput.json')
   }
   const inputListOfTheCoordinatesAsObjects = JSON.parse(inputListOfCoordinatesAsAString)
-  const returnedDataAsListOfObjects = []
-
-  const listOfRequestFunctionsNotYetExecuted = inputListOfTheCoordinatesAsObjects.map((coordinate) => {
-    return async () => {
-      console.log(`Getting data for lat: ${coordinate.lat} long: ${coordinate.long} from ${DARK_SKY_HOSTNAME}`)
-      const formattedRequestURLForCoordinateAsString = `${DARK_SKY_PROTOCOL}://${DARK_SKY_HOSTNAME}/${DARK_SKY_PATH}/${DARK_SKY_TOKEN}/${coordinate.lat},${coordinate.long}`
-      console.log(formattedRequestURLForCoordinateAsString)
-      const darkSkyCoordinateResponse = await fetch(formattedRequestURLForCoordinateAsString)
-      const darkSkyCoordinateJsonAsObject = await darkSkyCoordinateResponse.json()
-      returnedDataAsListOfObjects.push(darkSkyCoordinateJsonAsObject)
-    }
-  })
-
-  const listOfAllTheRequestsAsTheyAreExecuting = await parallel(listOfRequestFunctionsNotYetExecuted, NUMBER_OF_CONCURRENT_REQUESTS)
-  await Promise.all(listOfAllTheRequestsAsTheyAreExecuting)
+  const returnedDataAsListOfObjects = await getDarkSkyDataForCoordinates(inputListOfTheCoordinatesAsObjects, NUMBER_OF_CONCURRENT_REQUESTS)
   let returnedDataAsString = JSON.stringify(returnedDataAsListOfObjects)
   fs.writeFileSync('output.json', returnedDataAsString)
   console.log('Data saved to output.json')
