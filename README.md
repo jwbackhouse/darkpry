@@ -5,5 +5,6 @@
 1. Get an Editor UI (vs code is good) - [chrome vscode](https://code.headmelted.com/)
 1. Get dependencies: `npm install`
 1. Set the environment variable DARK_SKY_TOKEN (google how to do this on your operating system)
+1. Add your input data to the input folder as input.csv, look at sampleInput.csv for an example of what is expected (note the final comma is needed on each line)
 1. Run the program `npm start`
 1. Write code, you can run `npm run lint` to check the format of your code

@@ -1,3 +1,5 @@
 node_modules/
-output.json
 input.json
+input.csv
+output.csv
+output.json
