@@ -1,45 +1,45 @@
+/* jslint es6 */
+const fetch = require('node-fetch')
+const fs = require('fs')
+const parallel = require('async-await-parallel')
 
-//https://api.darksky.net/forecast/d3cdf47118616664be90631b60bbc0a2/42.3601,-71.0589
-const fetch = require('node-fetch');
-const fs = require('fs');
-const asyncForEach = require('./asyncForEach');
+const NUMBER_OF_CONCURRENT_REQUESTS = 10
+const DARK_SKY_TOKEN = process.env.DARK_SKY_TOKEN
+const DARK_SKY_HOSTNAME = 'api.darksky.net'
+const DARK_SKY_PATH = 'forecast'
+const DARK_SKY_PROTOCOL = 'https'
 
 const main = async () => {
-	const DARK_SKY_TOKEN = process.env.DARK_SKY_TOKEN;
-	if (!DARK_SKY_TOKEN) { throw new Error("The environment variable DARK_SKY_TOKEN must be set") }
-	const path = `/forecast/${DARK_SKY_TOKEN}/`
-	let myCoordsData;
-	if (fs.existsSync('input.json')) {
-		console.log("Found an input.json file, using this")
-		myCoordsData = fs.readFileSync('input.json');
-	} else {
-		console.log("Did not find an input.json file, using sampleInput.json")
-		myCoordsData = fs.readFileSync('sampleInput.json');
-	}
-	const myCoords = JSON.parse(myCoordsData);
+  if (!DARK_SKY_TOKEN) { throw new Error('The environment variable DARK_SKY_TOKEN must be set') };
+  let inputListOfCoordinatesAsAString = ''
+  if (fs.existsSync('input.json')) {
+    inputListOfCoordinatesAsAString = fs.readFileSync('input.json')
+  } else {
+    console.log('Did not find an input.json file, using sampleInput.json')
+    inputListOfCoordinatesAsAString = fs.readFileSync('sampleInput.json')
+  }
+  const inputListOfTheCoordinatesAsObjects = JSON.parse(inputListOfCoordinatesAsAString)
+  const returnedDataAsListOfObjects = []
 
-	const returnedData = [];
-	await asyncForEach(myCoords, async (coordinate) => {
-		console.log("Getting data for lat: " + coordinate.lat + " long: " + coordinate.long);
-		const options = {
-			hostname: 'api.darksky.net',
-			port: 443,
-			path: path + coordinate.lat + "," + coordinate.long,
-			method: 'GET'
-		}
-		const url = `https://${options.hostname}${options.path}`
-		console.log(url);
-		const response = await fetch(url);
-		const json = await response.json();
-		returnedData.push(json);
-	});
+  const listOfRequestFunctionsNotYetExecuted = inputListOfTheCoordinatesAsObjects.map((coordinate) => {
+    return async () => {
+      console.log(`Getting data for lat: ${coordinate.lat} long: ${coordinate.long} from ${DARK_SKY_HOSTNAME}`)
+      const formattedRequestURLForCoordinateAsString = `${DARK_SKY_PROTOCOL}://${DARK_SKY_HOSTNAME}/${DARK_SKY_PATH}/${DARK_SKY_TOKEN}/${coordinate.lat},${coordinate.long}`
+      console.log(formattedRequestURLForCoordinateAsString)
+      const darkSkyCoordinateResponse = await fetch(formattedRequestURLForCoordinateAsString)
+      const darkSkyCoordinateJsonAsObject = await darkSkyCoordinateResponse.json()
+      returnedDataAsListOfObjects.push(darkSkyCoordinateJsonAsObject)
+    }
+  })
 
-	let data = JSON.stringify(returnedData);
-	fs.writeFileSync('output.json', data);
-	console.log("Data saved to output.json");
+  const listOfAllTheRequestsAsTheyAreExecuting = await parallel(listOfRequestFunctionsNotYetExecuted, NUMBER_OF_CONCURRENT_REQUESTS)
+  await Promise.all(listOfAllTheRequestsAsTheyAreExecuting)
+  let returnedDataAsString = JSON.stringify(returnedDataAsListOfObjects)
+  fs.writeFileSync('output.json', returnedDataAsString)
+  console.log('Data saved to output.json')
 }
 
 main().catch((error) => {
-	console.log("There was an error");
-	console.error(error);
+  console.log('There was an error')
+  console.error(error)
 })
