@@ -14,9 +14,9 @@ const DARK_SKY_PATH = 'forecast'
 const DARK_SKY_PROTOCOL = 'https'
 const INPUT_FILE_NAME = './input.csv'
 const SAMPLE_INPUT_FILE_NAME = 'sampleInput.csv'
-const CSV_OUTPUT_FILE_NAME = './output.csv'
-const JSON_OUTPUT_FILE_NAME = './output.json'
-const JSON_RESPONSE_FILE_NAME = './rawResponse.json'
+const CSV_OUTPUT_FILE_NAME = './out/output.csv'
+const JSON_OUTPUT_FILE_NAME = './out/output.json'
+const JSON_RESPONSE_FILE_NAME = './out/rawResponse.json'
 
 // FUNCTIONS
 const loadInputData = async () => {
@@ -31,8 +31,7 @@ const loadInputData = async () => {
   console.log('parsing data')
   let inputData = await converter.csv2jsonAsync(inputDataAsString.toString(), options)
   console.log('parsed data')
-  console.dir(inputData)
-  inputData = LIMIT_REQUESTS ? inputData.slice(0, LIMIT_REQUESTS) : inputData;
+  inputData = LIMIT_REQUESTS ? inputData.slice(0, LIMIT_REQUESTS) : inputData
   console.dir(inputData)
   return inputData
 }
@@ -41,7 +40,7 @@ const writeOutputData = async (returnedDataAsListOfObjects) => {
   fs.writeFileSync(JSON_OUTPUT_FILE_NAME, JSON.stringify(returnedDataAsListOfObjects))
   // let unwind = ['hourly', 'hourly.data', 'hourly.data.time'];
   const options = {
-    keys: ['day', 'time', 'latitude', 'longitude'],
+    keys: ['time', 'latitude', 'longitude'],
     wrap: '',
     prependHeader: true
   }
