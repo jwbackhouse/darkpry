@@ -3,6 +3,7 @@ const fetch = require('node-fetch')
 const fs = require('fs')
 const parallel = require('async-await-parallel')
 let converter = require('json-2-csv')
+require('dotenv').config()
 
 // CONSTANTS
 const NUMBER_OF_CONCURRENT_REQUESTS = 10 // probably set to 100 for large datasets
@@ -13,37 +14,35 @@ const DARK_SKY_PATH = 'forecast'
 const DARK_SKY_PROTOCOL = 'https'
 const INPUT_FILE_NAME = './input.csv'
 const SAMPLE_INPUT_FILE_NAME = 'sampleInput.csv'
-const CSV_OUTPUT_FILE_NAME = './output.csv'
-const JSON_OUTPUT_FILE_NAME =  './output.json'
+const CSV_OUTPUT_FILE_NAME = './out/output.csv'
+const JSON_OUTPUT_FILE_NAME = './out/output.json'
+const JSON_RESPONSE_FILE_NAME = './out/rawResponse.json'
 
+// FUNCTIONS
 const loadInputData = async () => {
-  console.log("loading data")
+  console.log('loading data')
   const inputDataAsString = fs.existsSync(INPUT_FILE_NAME) ? fs.readFileSync(INPUT_FILE_NAME) : fs.readFileSync(SAMPLE_INPUT_FILE_NAME)
   const options = {
     keys: ['lat', 'long', 'time'],
-    wrap: "",
+    wrap: '',
     prependHeader: true
   }
   console.log(inputDataAsString.toString())
-  console.log("parsing data")
+  console.log('parsing data')
   let inputData = await converter.csv2jsonAsync(inputDataAsString.toString(), options)
-  console.log("parsed data")
-  console.dir(inputData)
-  inputData = LIMIT_REQUESTS ? inputData.slice(0, LIMIT_REQUESTS) : inputData;
+  console.log('parsed data')
+  inputData = LIMIT_REQUESTS ? inputData.slice(0, LIMIT_REQUESTS) : inputData
   console.dir(inputData)
   return inputData
 }
-
-const unwind = ['hourly', 'hourly.data', 'hourly.data.time'];
 
 const writeOutputData = async (returnedDataAsListOfObjects) => {
   fs.writeFileSync(JSON_OUTPUT_FILE_NAME, JSON.stringify(returnedDataAsListOfObjects))
   // let unwind = ['hourly', 'hourly.data', 'hourly.data.time'];
   const options = {
-      keys: ['latitude', 'longitude', 'hourly.data.time', ],
-      wrap: "",
-      unwind: unwind,
-      prependHeader: true,
+    keys: ['time', 'latitude', 'longitude'],
+    wrap: '',
+    prependHeader: true
   }
   let returnedDataAsString = await converter.json2csvAsync(returnedDataAsListOfObjects, options)
   fs.writeFileSync(CSV_OUTPUT_FILE_NAME, returnedDataAsString)
@@ -68,13 +67,30 @@ const getDarkSkyDataForCoordinates = async (coordinatesList) => {
   return Promise.all(listOfAllTheRequestsAsTheyAreExecuting)
 }
 
+const flattenHours = (darkSkyCoordinateJsonAsObject) => {
+  const flattened = []
+  darkSkyCoordinateJsonAsObject.map(day => {
+    day.hourly.data.map((hour) => {
+      flattened.push({
+        time: hour.time,
+        latitude: day.latitude,
+        longitude: day.longitude
+      })
+    })
+  })
+  return flattened
+}
+
 const main = async () => {
   if (!DARK_SKY_TOKEN) { throw new Error('The environment variable DARK_SKY_TOKEN must be set') };
   const inputDataAsListOfObjects = await loadInputData()
   const returnedDataAsListOfObjects = await getDarkSkyDataForCoordinates(inputDataAsListOfObjects, NUMBER_OF_CONCURRENT_REQUESTS)
-  return writeOutputData(returnedDataAsListOfObjects)
+  fs.writeFileSync(JSON_RESPONSE_FILE_NAME, JSON.stringify(returnedDataAsListOfObjects))
+  const flattened = flattenHours(returnedDataAsListOfObjects)
+  return writeOutputData(flattened)
 }
 
+// RUN
 main().catch((error) => {
   console.log('There was an error')
   console.error(error)

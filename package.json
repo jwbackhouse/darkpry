@@ -4,13 +4,16 @@
   "description": "Script to get data from Dark Sky",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "lint": "npx eslint index.js"
+    "debug": "node --nolazy --inspect-brk=5858 index.js",
+    "start": "rm -rf out && mkdir out && node index.js",
+    "lint": "npx eslint index.js",
+    "build": "npm run lint"
   },
   "author": "James Wood",
   "license": "ISC",
   "dependencies": {
     "async-await-parallel": "^1.0.0",
+    "dotenv": "^8.0.0",
     "json-2-csv": "^3.5.3",
     "node-fetch": "^2.5.0"
   },
