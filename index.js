@@ -34,12 +34,16 @@ const loadInputData = async () => {
   return inputData
 }
 
+const unwind = ['hourly', 'hourly.data', 'hourly.data.time'];
+
 const writeOutputData = async (returnedDataAsListOfObjects) => {
   fs.writeFileSync(JSON_OUTPUT_FILE_NAME, JSON.stringify(returnedDataAsListOfObjects))
+  // let unwind = ['hourly', 'hourly.data', 'hourly.data.time'];
   const options = {
-      keys: ['latitude', 'longitude', 'currently.summary', ],
+      keys: ['latitude', 'longitude', 'hourly.data.time', ],
       wrap: "",
-      prependHeader: true
+      unwind: unwind,
+      prependHeader: true,
   }
   let returnedDataAsString = await converter.json2csvAsync(returnedDataAsListOfObjects, options)
   fs.writeFileSync(CSV_OUTPUT_FILE_NAME, returnedDataAsString)
@@ -51,9 +55,9 @@ const getDarkSkyDataForCoordinates = async (coordinatesList) => {
     return async () => {
       console.dir(coordinate)
       console.log(`Getting data for lat: ${coordinate.lat} long: ${coordinate.long} from ${DARK_SKY_HOSTNAME} at ${coordinate.time}`)
-      const coordinateTime = new Date(coordinate.time)
-      const unixTimestamp = parseInt((coordinateTime.getTime() / 1000).toFixed(0))
-      const formattedRequestURLForCoordinateAsString = `${DARK_SKY_PROTOCOL}://${DARK_SKY_HOSTNAME}/${DARK_SKY_PATH}/${DARK_SKY_TOKEN}/${coordinate.lat},${coordinate.long},${unixTimestamp}`
+      const coordinateTime = coordinate.time
+      // const unixTimestamp = parseInt((coordinateTime.getTime() / 1000).toFixed(0))
+      const formattedRequestURLForCoordinateAsString = `${DARK_SKY_PROTOCOL}://${DARK_SKY_HOSTNAME}/${DARK_SKY_PATH}/${DARK_SKY_TOKEN}/${coordinate.lat},${coordinate.long},${coordinateTime}?exclude=flags,minutely,currently&units=si`
       console.log(formattedRequestURLForCoordinateAsString)
       const darkSkyCoordinateResponse = await fetch(formattedRequestURLForCoordinateAsString)
       const darkSkyCoordinateJsonAsObject = await darkSkyCoordinateResponse.json()

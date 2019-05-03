@@ -3,3 +3,5 @@ input.json
 input.csv
 output.csv
 output.json
+darksky_input.csv
+.env
