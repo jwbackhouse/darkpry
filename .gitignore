@@ -6,3 +6,4 @@ output.json
 darksky_input.csv
 .env
 rawResponse.json
+out/
