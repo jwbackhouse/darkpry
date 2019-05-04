@@ -14,6 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "csv-parser": "^2.2.0",
+    "dot-object": "^1.7.1",
     "dotenv": "^8.0.0",
     "json2csv": "^4.5.1",
     "node-fetch": "^2.5.0",

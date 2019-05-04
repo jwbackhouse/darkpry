@@ -1,5 +1,6 @@
 
 const { Transform } = require('stream')
+const dot = require('dot-object')
 
 class FlattenHoursTransform extends Transform {
   constructor () {
@@ -25,11 +26,12 @@ class FlattenHoursTransform extends Transform {
 const flattenHours = (darkSkyCoordinateJsonAsObject) => {
   const flattened = []
   darkSkyCoordinateJsonAsObject.hourly.data.map((hour) => {
-    flattened.push({
-      ...hour,
+    flattened.push(dot.dot({
       latitude: darkSkyCoordinateJsonAsObject.latitude,
-      longitude: darkSkyCoordinateJsonAsObject.longitude
-    })
+      longitude: darkSkyCoordinateJsonAsObject.longitude,
+      hour: hour,
+      day: darkSkyCoordinateJsonAsObject.daily.data[0]
+    }))
   })
   return flattened
 }
