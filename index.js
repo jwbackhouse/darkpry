@@ -1,97 +1,42 @@
-/* jslint es6 */
-const fetch = require('node-fetch')
-const fs = require('fs')
-const parallel = require('async-await-parallel')
-let converter = require('json-2-csv')
 require('dotenv').config()
 
 // CONSTANTS
-const NUMBER_OF_CONCURRENT_REQUESTS = 10 // probably set to 100 for large datasets
-const LIMIT_REQUESTS = 30 // set to 0 to run for all the data
 const DARK_SKY_TOKEN = process.env.DARK_SKY_TOKEN
 const DARK_SKY_HOSTNAME = 'api.darksky.net'
 const DARK_SKY_PATH = 'forecast'
 const DARK_SKY_PROTOCOL = 'https'
 const INPUT_FILE_NAME = './input.csv'
-const SAMPLE_INPUT_FILE_NAME = 'sampleInput.csv'
 const CSV_OUTPUT_FILE_NAME = './out/output.csv'
-const JSON_OUTPUT_FILE_NAME = './out/output.json'
-const JSON_RESPONSE_FILE_NAME = './out/rawResponse.json'
 
-// FUNCTIONS
-const loadInputData = async () => {
-  console.log('loading data')
-  const inputDataAsString = fs.existsSync(INPUT_FILE_NAME) ? fs.readFileSync(INPUT_FILE_NAME) : fs.readFileSync(SAMPLE_INPUT_FILE_NAME)
-  const options = {
-    keys: ['lat', 'long', 'time'],
-    wrap: '',
-    prependHeader: true
-  }
-  console.log(inputDataAsString.toString())
-  console.log('parsing data')
-  let inputData = await converter.csv2jsonAsync(inputDataAsString.toString(), options)
-  console.log('parsed data')
-  inputData = LIMIT_REQUESTS ? inputData.slice(0, LIMIT_REQUESTS) : inputData
-  console.dir(inputData)
-  return inputData
-}
+// EXTERNAL DEPENDENCIES
+const fs = require('fs')
+const csv = require('csv-parser')
+const { pipeline } = require('stream')
+const json2csv = require('json2csv')
 
-const writeOutputData = async (returnedDataAsListOfObjects) => {
-  fs.writeFileSync(JSON_OUTPUT_FILE_NAME, JSON.stringify(returnedDataAsListOfObjects))
-  // let unwind = ['hourly', 'hourly.data', 'hourly.data.time'];
-  const options = {
-    keys: ['time', 'latitude', 'longitude'],
-    wrap: '',
-    prependHeader: true
-  }
-  let returnedDataAsString = await converter.json2csvAsync(returnedDataAsListOfObjects, options)
-  fs.writeFileSync(CSV_OUTPUT_FILE_NAME, returnedDataAsString)
-  console.log(`Data saved to ${CSV_OUTPUT_FILE_NAME} and ${JSON_OUTPUT_FILE_NAME}`)
-}
+// INTERNAL DEPENDENCIES
+const darkSkyDataTransform = require('./src/DarkSkyDataTransform')
+const FlattenHoursTransform = require('./src/FlattenHoursTransform')
 
-const getDarkSkyDataForCoordinates = async (coordinatesList) => {
-  const listOfRequestFunctionsNotYetExecuted = coordinatesList.map((coordinate) => {
-    return async () => {
-      console.dir(coordinate)
-      console.log(`Getting data for lat: ${coordinate.lat} long: ${coordinate.long} from ${DARK_SKY_HOSTNAME} at ${coordinate.time}`)
-      const coordinateTime = coordinate.time
-      // const unixTimestamp = parseInt((coordinateTime.getTime() / 1000).toFixed(0))
-      const formattedRequestURLForCoordinateAsString = `${DARK_SKY_PROTOCOL}://${DARK_SKY_HOSTNAME}/${DARK_SKY_PATH}/${DARK_SKY_TOKEN}/${coordinate.lat},${coordinate.long},${coordinateTime}?exclude=flags,minutely,currently&units=si`
-      console.log(formattedRequestURLForCoordinateAsString)
-      const darkSkyCoordinateResponse = await fetch(formattedRequestURLForCoordinateAsString)
-      const darkSkyCoordinateJsonAsObject = await darkSkyCoordinateResponse.json()
-      return darkSkyCoordinateJsonAsObject
+// const csvFields = ['latitude', 'longitude', 'summary'] // Use this if we only want specific fields
+const csvOptions = {} // { csvFields }
+const csvTransformOptions = { highWaterMark: 8192, objectMode: true }
+const toCSVTransform = new json2csv.Transform(csvOptions, csvTransformOptions)
+
+const readStream = fs.createReadStream(INPUT_FILE_NAME)
+const writeStream = fs.createWriteStream(CSV_OUTPUT_FILE_NAME, {})
+
+pipeline(
+  readStream,
+  csv(),
+  darkSkyDataTransform(DARK_SKY_HOSTNAME, DARK_SKY_PROTOCOL, DARK_SKY_PATH, DARK_SKY_TOKEN),
+  new FlattenHoursTransform(),
+  toCSVTransform,
+  writeStream,
+  (error) => {
+    if (error) {
+      console.error('Pipeline failed', error)
+    } else {
+      console.log('Pipeline succeeded')
     }
   })
-  const listOfAllTheRequestsAsTheyAreExecuting = await parallel(listOfRequestFunctionsNotYetExecuted, NUMBER_OF_CONCURRENT_REQUESTS)
-  return Promise.all(listOfAllTheRequestsAsTheyAreExecuting)
-}
-
-const flattenHours = (darkSkyCoordinateJsonAsObject) => {
-  const flattened = []
-  darkSkyCoordinateJsonAsObject.map(day => {
-    day.hourly.data.map((hour) => {
-      flattened.push({
-        time: hour.time,
-        latitude: day.latitude,
-        longitude: day.longitude
-      })
-    })
-  })
-  return flattened
-}
-
-const main = async () => {
-  if (!DARK_SKY_TOKEN) { throw new Error('The environment variable DARK_SKY_TOKEN must be set') };
-  const inputDataAsListOfObjects = await loadInputData()
-  const returnedDataAsListOfObjects = await getDarkSkyDataForCoordinates(inputDataAsListOfObjects, NUMBER_OF_CONCURRENT_REQUESTS)
-  fs.writeFileSync(JSON_RESPONSE_FILE_NAME, JSON.stringify(returnedDataAsListOfObjects))
-  const flattened = flattenHours(returnedDataAsListOfObjects)
-  return writeOutputData(flattened)
-}
-
-// RUN
-main().catch((error) => {
-  console.log('There was an error')
-  console.error(error)
-})
