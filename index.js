@@ -7,6 +7,7 @@ const DARK_SKY_PATH = 'forecast'
 const DARK_SKY_PROTOCOL = 'https'
 const INPUT_FILE_NAME = './input.csv'
 const CSV_OUTPUT_FILE_NAME = './out/output.csv'
+const DARK_SKY_CONCURRENT_CONNECTIONS = 100
 
 // EXTERNAL DEPENDENCIES
 const fs = require('fs')
@@ -24,12 +25,12 @@ const csvTransformOptions = { highWaterMark: 8192, objectMode: true }
 const toCSVTransform = new json2csv.Transform(csvOptions, csvTransformOptions)
 
 const readStream = fs.createReadStream(INPUT_FILE_NAME)
-const writeStream = fs.createWriteStream(CSV_OUTPUT_FILE_NAME, {})
+const writeStream = fs.createWriteStream(CSV_OUTPUT_FILE_NAME)
 
 pipeline(
   readStream,
   csv(),
-  darkSkyDataTransform(DARK_SKY_HOSTNAME, DARK_SKY_PROTOCOL, DARK_SKY_PATH, DARK_SKY_TOKEN),
+  darkSkyDataTransform(DARK_SKY_HOSTNAME, DARK_SKY_PROTOCOL, DARK_SKY_PATH, DARK_SKY_TOKEN, DARK_SKY_CONCURRENT_CONNECTIONS),
   new FlattenHoursTransform(),
   toCSVTransform,
   writeStream,
