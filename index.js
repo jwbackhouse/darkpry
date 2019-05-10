@@ -10,8 +10,11 @@ cron.schedule('* 5 * * *', function(){
   const DARK_SKY_PATH = 'forecast'
   const DARK_SKY_PROTOCOL = 'https'
   const INPUT_FILE_NAME = './input.csv'
-  const CSV_OUTPUT_FILE_NAME = './out/output.csv'
   const DARK_SKY_CONCURRENT_CONNECTIONS = 100
+  
+  // JB amend to output file name
+  var filenum = Date.now();
+  const CSV_OUTPUT_FILE_NAME = './out/output' + filenum + '.csv'
   
   // EXTERNAL DEPENDENCIES
   const fs = require('fs')
