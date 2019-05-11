@@ -2,7 +2,7 @@ require('dotenv').config()
 
 // JB cron scheduling
 var cron = require('node-cron');
-cron.schedule('* 5 * * *', function(){
+cron.schedule('0 8 * * *', function(){
   
   // CONSTANTS
   const DARK_SKY_TOKEN = process.env.DARK_SKY_TOKEN
