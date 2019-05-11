@@ -4,7 +4,7 @@ const through2Concurrent = require('through2-concurrent')
 
 const getDarkSkyData = async (hostname, protocol, path, token, coordinate) => {
   console.log(`Getting data for lat: ${coordinate.lat} long: ${coordinate.long} from ${hostname}`)
-  const formattedRequestURLForCoordinateAsString = `${protocol}://${hostname}/${path}/${token}/${coordinate.lat},${coordinate.long}?exclude=flags,alerts,minutely,hourly,currently&units=si`
+  const formattedRequestURLForCoordinateAsString = `${protocol}://${hostname}/${path}/${token}/${coordinate.lat},${coordinate.long}?exclude=flags,alerts,minutely,currently&units=si`
   const darkSkyCoordinateResponse = await fetch(formattedRequestURLForCoordinateAsString)
   return darkSkyCoordinateResponse.json()
 }
