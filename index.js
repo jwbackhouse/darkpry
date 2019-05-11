@@ -44,4 +44,3 @@ require('dotenv').config()
         console.log('Pipeline succeeded')
       }
   })
-})
