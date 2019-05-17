@@ -9,8 +9,8 @@ require('dotenv').config()
   const DARK_SKY_CONCURRENT_CONNECTIONS = 100
   
   // JB amend to output file name
-  var filenum = Date.now();
-  const CSV_OUTPUT_FILE_NAME = './out/output' + filenum + '.csv'
+  var d = new Date();
+  const CSV_OUTPUT_FILE_NAME = './out/output_' + ('0'+d.getHours()).slice(-2) + ('0'+d.getMinutes()).slice(-2) + '_' + d.getDate() + ('0'+d.getMonth()).slice(-2) + d.getFullYear() + '.csv';
   
   // EXTERNAL DEPENDENCIES
   const fs = require('fs')
