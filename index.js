@@ -19,7 +19,7 @@ require('dotenv').config()
   const json2csv = require('json2csv')
   
   // INTERNAL DEPENDENCIES
-  const darkSkyDataTransformForecast = require('./src/DarkSkyDataTransformForecast')
+  const darkSkyDataTransform = require('./src/DarkSkyDataTransform')
   const FlattenHoursTransform = require('./src/FlattenHoursTransform')
   
   // const csvFields = ['latitude', 'longitude', 'summary'] // Use this if we only want specific fields
@@ -33,7 +33,7 @@ require('dotenv').config()
   pipeline(
     readStream,
     csv(),
-    darkSkyDataTransformForecast(DARK_SKY_HOSTNAME, DARK_SKY_PROTOCOL, DARK_SKY_PATH, DARK_SKY_TOKEN, DARK_SKY_CONCURRENT_CONNECTIONS),
+    darkSkyDataTransform(DARK_SKY_HOSTNAME, DARK_SKY_PROTOCOL, DARK_SKY_PATH, DARK_SKY_TOKEN, DARK_SKY_CONCURRENT_CONNECTIONS),
     new FlattenHoursTransform(),
     toCSVTransform,
     writeStream,

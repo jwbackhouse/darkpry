@@ -25,11 +25,12 @@ class FlattenHoursTransform extends Transform {
 
 const flattenHours = (darkSkyCoordinateJsonAsObject) => {
   const flattened = []
-  darkSkyCoordinateJsonAsObject.daily.data.map((day) => {
+  darkSkyCoordinateJsonAsObject.hourly.data.map((hour) => {
     flattened.push(dot.dot({
       latitude: darkSkyCoordinateJsonAsObject.latitude,
       longitude: darkSkyCoordinateJsonAsObject.longitude,
-      day: day
+      hour: hour,
+      day: darkSkyCoordinateJsonAsObject.daily.data[0]
     }))
   })
   return flattened
